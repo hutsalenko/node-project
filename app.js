@@ -2,15 +2,10 @@ const path = require('path');
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const errorController = require('./controllers/error');
-const sequelize = require('./util/database');
-const Product = require('./models/product');
 const User = require('./models/user');
-const Cart = require('./models/cart');
-const CartItem = require('./models/cart-item');
-const Order = require('./models/order');
-const OrderItem = require('./models/order-item');
 
 const app = express();
 
@@ -23,8 +18,8 @@ const shopRoutes = require('./routes/shop');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use((req, res, next) => {
-    User.findByPk(1)
+app.use((req, _, next) => {
+    User.findById('673f507700267e7e9c15daa7')
         .then((user) => {
             req.user = user;
             next();
@@ -37,33 +32,23 @@ app.use(shopRoutes);
 
 app.use(errorController.get404);
 
-Product.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
-User.hasMany(Product);
-User.hasOne(Cart);
-Cart.belongsTo(User);
-Cart.belongsToMany(Product, { through: CartItem });
-Product.belongsToMany(Cart, { through: CartItem });
-Order.belongsTo(User);
-User.hasMany(Order);
-Order.belongsToMany(Product, { through: OrderItem });
-
-sequelize
-    // .sync({ force: true })
-    .sync()
-    .then((result) => {
-        return User.findByPk(1);
-    })
-    .then((user) => {
-        if (!user) {
-            return User.create({ name: 'Ivan', email: 'test@gmail.com' });
-        }
-        return user;
-    })
-    .then((user) => {
-        // console.log('user', user);
-        return user.createCart();
-    })
-    .then((user) => {
+mongoose
+    .connect(
+        'mongodb+srv://ivangutsalenko92:70biPAYmrs24HVGz@cluster0.bsq4a.mongodb.net/shop?retryWrites=true&w=majority&appName=Cluster0'
+    )
+    .then(() => {
+        User.findOne().then((user) => {
+            if (!user) {
+                const user = new User({
+                    name: 'Ivan',
+                    email: 'ivan@gmail.com',
+                    cart: {
+                        items: [],
+                    },
+                });
+                user.save();
+            }
+        });
         app.listen(3000);
     })
     .catch((err) => console.log(err));

@@ -1,6 +1,6 @@
 const Product = require('../models/product');
 
-exports.getAddProduct = (req, res) => {
+exports.getAddProduct = (_, res) => {
     res.render('admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
@@ -10,13 +10,16 @@ exports.getAddProduct = (req, res) => {
 
 exports.postAddProduct = (req, res) => {
     const { title, imageUrl, price, description } = req.body;
-    req.user
-        .createProduct({
-            title,
-            price,
-            imageUrl,
-            description,
-        })
+    const product = new Product({
+        title,
+        price,
+        description,
+        imageUrl,
+        userId: req.user,
+    });
+
+    product
+        .save()
         .then(() => {
             console.log('Created Product');
             res.redirect('/admin/products');
@@ -32,11 +35,8 @@ exports.getEditProduct = (req, res) => {
         return res.redirect('/');
     }
 
-    req.user
-        .getProducts({ where: { id: prodId } })
-        .then((products) => {
-            const product = products[0];
-
+    Product.findById(prodId)
+        .then((product) => {
             if (!product) {
                 return res.redirect('/');
             }
@@ -58,12 +58,13 @@ exports.postEditProduct = (req, res) => {
     const updatedImageUrl = req.body.imageUrl;
     const updatedDesc = req.body.description;
 
-    Product.findByPk(prodId)
+    Product.findById(prodId)
         .then((product) => {
             product.title = updatedTitle;
             product.price = updatedPrice;
             product.description = updatedDesc;
             product.imageUrl = updatedImageUrl;
+
             return product.save();
         })
         .then(() => {
@@ -73,9 +74,10 @@ exports.postEditProduct = (req, res) => {
         .catch((err) => console.log(err));
 };
 
-exports.getProducts = (req, res) => {
-    req.user
-        .getProducts()
+exports.getProducts = (_, res) => {
+    Product.find()
+        // .select('title price -_id')
+        // .populate('userId', 'name')
         .then((products) => {
             res.render('admin/products', {
                 prods: products,
@@ -89,15 +91,10 @@ exports.getProducts = (req, res) => {
 exports.postDeleteProduct = (req, res) => {
     const prodId = req.body.productId;
 
-    Product.findByPk(prodId)
-        .then((product) => {
-            return product.destroy();
-        })
+    Product.findByIdAndDelete(prodId)
         .then(() => {
             console.log('Destroyed Product');
             res.redirect('/admin/products');
         })
         .catch((err) => console.log(err));
-
-    res.redirect('/admin/products');
 };
