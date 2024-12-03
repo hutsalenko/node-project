@@ -1,7 +1,7 @@
 const Product = require('../models/product');
 const fileHelper = require('../util/file');
 
-exports.getAddProduct = (req, res) => {
+exports.getAddProduct = (_, res) => {
     res.render('admin/edit-product', {
         pageTitle: 'Add Product',
         path: '/admin/add-product',
@@ -49,7 +49,7 @@ exports.postAddProduct = (req, res, next) => {
         });
 };
 
-exports.getEditProduct = (req, res) => {
+exports.getEditProduct = async (req, res) => {
     const editMode = req.query.edit;
     if (!editMode) {
         return res.redirect('/');
@@ -57,24 +57,23 @@ exports.getEditProduct = (req, res) => {
 
     const prodId = req.params.productId;
 
-    Product.findById(prodId)
-        .then((product) => {
-            if (!product) {
-                return res.redirect('/');
-            }
+    try {
+        const product = await Product.findById(prodId);
+        if (!product) {
+            return res.redirect('/');
+        }
 
-            res.render('admin/edit-product', {
-                pageTitle: 'Edit Product',
-                path: '/admin/edit-product',
-                editing: editMode,
-                product: product,
-            });
-        })
-        .catch((err) => {
-            const error = new Error(err);
-            error.httpStatusCode = 500;
-            return next(error);
+        res.render('admin/edit-product', {
+            pageTitle: 'Edit Product',
+            path: '/admin/edit-product',
+            editing: editMode,
+            product: product,
         });
+    } catch (err) {
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+    }
 };
 
 exports.postEditProduct = (req, res) => {

@@ -22,7 +22,7 @@ exports.getLogin = (req, res) => {
     });
 };
 
-exports.getSignup = (req, res, next) => {
+exports.getSignup = (req, res) => {
     let message = req.flash('error');
     if (message.length > 0) {
         message = message[0];
